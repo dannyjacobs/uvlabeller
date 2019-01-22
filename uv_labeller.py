@@ -25,11 +25,14 @@ class Data():
 
 	def setFile(self,filename):
 		self.filename = filename
-		self.UV.read(self.filename)
+		self.UV.read(self.filename) 	# Functional. But testing means I want faster load times
+		#self.UV.read(self.filename, read_data=False, read_metadata=True)
 		self.pairs = self.UV.get_antpairs()
 		print(self.pairs)
 		self.ants = self.UV.get_ants()
 		self.currAnts = list(self.pairs[0])
+		self.pols = self.UV.get_pols()
+		self.pol = self.pols[0]
 
 	def setFiles(self,filenames):
 		self.files = filenames
@@ -38,13 +41,19 @@ class Data():
 		if a != self.currAnts[0] and a is not None:
 			if (a, self.currAnts[1]) in self.pairs:
 				self.currAnts = [a, self.currAnts[1]]
+			elif (self.currAnts[1], a) in self.pairs:
+				self.currAnts = [self.currAnts[1], a]
 		if b != self.currAnts[1] and b is not None:
 			if (self.currAnts[0], b) in self.pairs:
 				self.currAnts = [self.currAnts[0], b]
+			elif (b, self.currAnts[0]) in self.pairs:
+				self.currAnts = [b, self.currAnts[0]]
 		# else tooltip error
 
 		print('ants', self.currAnts)
 
+	def setPol(self, pol):
+		self.pol = pol
 	def flagger():
 		pass
 
@@ -80,24 +89,10 @@ class PlotCanvas(GraphWindow):
 
 	def __init__(self, *args, **kwargs):
 		GraphWindow.__init__(self, *args, **kwargs)
-		#Adjust to a change in drop down menus
-		#timer = QtCore.QTimer(self)
-		#timer.timeout.connect(self.update_figure)
-		#timer.start(1000)
-
-	#def compute_initial_figure(self):
-		#self.count = 0
-		#im = self.axes.imshow(np.abs(UV.get_data((1,2,'xx'))), aspect='auto', extent=[0,1000,60,0], vmin=0, vmax=2.0*np.median(np.abs(UV.get_data((1,2,'xx')))))
-		#cbar = self.fig.add_axes([0.925, 0.1, 0.035, 0.8])
-		#self.fig.colorbar(im, cax=cbar)
-	#	pass
-	  
 
 	def update_figure(self, data):
-		#self.count += 1
-		#self.count %= len(pairs)
-		#curr = pairs[self.count]
-		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],'xx'))
+		#data.UV.read(data.filename, bls=[(data.currAnts[0],data.currAnts[1])])
+		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],data.pol))
 		im = self.axes.imshow(np.abs(calc), aspect='auto', extent=[0,1000,60,0], vmin=0, vmax=2.0*np.median(np.abs(calc)))
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
@@ -135,10 +130,13 @@ class Main(QtWidgets.QMainWindow):
 		self.data.setFile(files)
 		self.aData = [str(x) for x in self.data.ants]
 		self.bData = [str(x) for x in self.data.ants]
+		self.pData = self.data.pols
 		self.aCBox.clear()       # delete all items from comboBox
 		self.bCBox.clear()
+		self.pCBox.clear()
 		self.aCBox.addItems(self.aData) # add the actual content of self.comboData
 		self.bCBox.addItems(self.bData)
+		self.pCBox.addItems(self.pData)
 		self.plot.update(self.data)
 	def saveFile(self):
 		options = QtWidgets.QFileDialog.Options()
@@ -254,12 +252,15 @@ class Main(QtWidgets.QMainWindow):
 		#Info window
 		ant1 = QtWidgets.QLabel('Antenna')
 		ant2 = QtWidgets.QLabel('Antenna')
+		pol = QtWidgets.QLabel('Polarization')
 		notes = QtWidgets.QLabel('Notes')
 
 		self.aCBox = QtWidgets.QComboBox()
 		self.aCBox.currentIndexChanged.connect(self.selection)
 		self.bCBox = QtWidgets.QComboBox()
 		self.bCBox.currentIndexChanged.connect(self.selection2)
+		self.pCBox = QtWidgets.QComboBox()
+		self.pCBox.currentIndexChanged.connect(self.selection3)
 
 		notesEdit = QtWidgets.QTextEdit()
 		vlay = QtWidgets.QVBoxLayout()
@@ -270,6 +271,8 @@ class Main(QtWidgets.QMainWindow):
 		hlay.addWidget(self.aCBox)
 		hlay.addWidget(ant2)
 		hlay.addWidget(self.bCBox)
+		hlay.addWidget(pol)
+		hlay.addWidget(self.pCBox)
 		vlay.addWidget(notes)
 		vlay.addWidget(notesEdit)
 		self.activeWindow.setLayout(vlay)
@@ -280,6 +283,9 @@ class Main(QtWidgets.QMainWindow):
 
 	def selection2(self, idx):
 		self.data.setAnts(None, int(self.bData[idx]))
+		self.plot.update(self.data)
+	def selection3(self, idx):
+		self.data.setPol(self.pData[idx])
 		self.plot.update(self.data)
 
 if __name__ == '__main__':
