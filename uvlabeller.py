@@ -11,6 +11,10 @@ from PyQt5 import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+import matplotlib
+
+plt.rcParams['toolbar'] = 'toolmanager'
+from matplotlib.backend_tools import ToolBase, ToolToggleBase
 
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from pyuvdata import UVData
@@ -80,6 +84,8 @@ class GraphWindow(FigureCanvas):
 		self.setParent(parent)
 		FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 		FigureCanvas.updateGeometry(self)
+		self.annotate = Annotate(self.axes)
+		self.fig.canvas.manager.toolmanager.add_tool('Labelling', LabelTool, self.annotate)
 
 	def compute_initial_figure(self):
 		pass
@@ -96,6 +102,64 @@ class PlotCanvas(GraphWindow):
 		im = self.axes.imshow(np.abs(calc), aspect='auto', extent=[0,1000,60,0], vmin=0, vmax=2.0*np.median(np.abs(calc)))
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
+
+class LabelTool(ToolToggleBase):
+	'''Show lines with a given gid'''
+	default_keymap = 'G'
+	description = 'Label tool'
+	default_toggled = False
+
+	def __init__(self, *args, ann, **kwargs):
+		self.ann = ann
+		super().__init__(*args, **kwargs)
+
+	def enable(self, *args):
+		self.ann.setLabeling()
+	def disable(self, *args):
+		self.ann.setLabeling()
+
+class Annotate(object):
+	def __init__(self, canvas):
+		self.labeling = False
+		self.ax = canvas
+		self.rect = matplotlib.patches.Rectangle((0,0), 1, 1, color='white')
+		self.x0 = None
+		self.y0 = None
+		self.x1 = None
+		self.y1 = None
+		self.pressed = False
+		self.ax.add_patch(self.rect)
+		self.ax.figure.canvas.mpl_connect('button_press_event', self.on_press)
+		self.ax.figure.canvas.mpl_connect('button_release_event', self.on_release)
+		self.ax.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
+
+	def setLabeling():
+		self.labeling = not self.labeling
+	def on_press(self, event):
+		if self.labeling:
+			self.pressed = True
+			self.x0 = event.xdata
+			self.y0 = event.ydata
+
+	def on_release(self, event):
+		if self.labeling:
+			self.pressed = False
+			self.x1 = event.xdata
+			self.y1 = event.ydata
+			self.rect.set_width(self.x1 - self.x0)
+			self.rect.set_height(self.y1 - self.y0)
+			self.rect.set_xy((self.x0, self.y0))
+			self.ax.figure.canvas.draw()
+
+	def on_motion(self, event):
+		if self.pressed and self.labeling:
+			self.x1 = event.xdata
+			self.y1 = event.ydata
+			self.rect.set_width(self.x1 - self.x0)
+			self.rect.set_height(self.y1 - self.y0)
+			self.rect.set_xy((self.x0, self.y0))
+			self.rect.set_linestyle('dashed')
+			self.ax.figure.canvas.draw()
 
 # GUI management
 class Main(QtWidgets.QMainWindow):
@@ -131,7 +195,7 @@ class Main(QtWidgets.QMainWindow):
 		self.aData = [str(x) for x in self.data.ants]
 		self.bData = [str(x) for x in self.data.ants]
 		self.pData = self.data.pols
-		self.aCBox.clear()       # delete all items from comboBox
+		self.aCBox.clear()	   # delete all items from comboBox
 		self.bCBox.clear()
 		self.pCBox.clear()
 		self.aCBox.addItems(self.aData) # add the actual content of self.comboData
