@@ -67,7 +67,9 @@ class WidgetPlot(QtWidgets.QWidget):
 		QtWidgets.QWidget.__init__(self, *args, **kwargs)
 		self.setLayout(QtWidgets.QVBoxLayout())
 		self.canvas = PlotCanvas(self, width=10, height=10)
-		self.toolbar = NavigationToolbar(self.canvas, self)
+		self.toolbar = MyToolbar(self.canvas, self)
+		#self.toolbar.toolmanager.add_tool('Labelling', LabelTool, Annotate)
+
 		self.layout().addWidget(self.toolbar)
 		self.layout().addWidget(self.canvas)
 
@@ -85,8 +87,7 @@ class GraphWindow(FigureCanvas):
 		FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 		FigureCanvas.updateGeometry(self)
 		self.annotate = Annotate(self.axes)
-		self.fig.canvas.manager.toolmanager.add_tool('Labelling', LabelTool, self.annotate)
-
+		
 	def compute_initial_figure(self):
 		pass
 
@@ -103,24 +104,20 @@ class PlotCanvas(GraphWindow):
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
 
-class LabelTool(ToolToggleBase):
-	'''Show lines with a given gid'''
-	default_keymap = 'G'
-	description = 'Label tool'
-	default_toggled = False
+class MyToolbar(NavigationToolbar):
+  def __init__(self, canvas, parent=None):
+    NavigationToolbar.__init__(self, canvas, parent)
+    self.canvas = canvas
+    #self.annotate = annotate
+    #self.iconDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+    #    "..", "images", "icons", "")
 
-	def __init__(self, *args, ann, **kwargs):
-		self.ann = ann
-		super().__init__(*args, **kwargs)
-
-	def enable(self, *args):
-		self.ann.setLabeling()
-	def disable(self, *args):
-		self.ann.setLabeling()
+    #self.a = self.addAction(QIcon(iconDir + "BYE2.ico"),
+    self.a = self.addAction("Annotate", self.canvas.annotate.toggle)
 
 class Annotate(object):
 	def __init__(self, canvas):
-		self.labeling = False
+		self.labeling = True
 		self.ax = canvas
 		self.rect = matplotlib.patches.Rectangle((0,0), 1, 1, color='white')
 		self.x0 = None
@@ -133,8 +130,10 @@ class Annotate(object):
 		self.ax.figure.canvas.mpl_connect('button_release_event', self.on_release)
 		self.ax.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
 
-	def setLabeling():
+	def toggle(self):
 		self.labeling = not self.labeling
+		print(self.labeling, 'hello')
+
 	def on_press(self, event):
 		if self.labeling:
 			self.pressed = True
