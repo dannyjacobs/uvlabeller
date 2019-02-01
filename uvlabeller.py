@@ -1,75 +1,31 @@
-# Cecilia La Place
-# Thesis Project
+# UV Labeller UI
 
 # PyQt5 Imports
 import sys
 from PyQt5 import QtCore, QtWidgets
-#from PyQt5.QtWidgets import QApplication, QDesktopWidget, QMainWindow, QWidget, QMessageBox, QAction, qApp, QGridLayout, QTextEdit, QLineEdit, QLabel, QComboBox, QSizePolicy
-#from PyQt5.QtGui import QIcon
 
-# Matplotlib imports
+# Matplotlib Imports
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import matplotlib
 
-plt.rcParams['toolbar'] = 'toolmanager'
-from matplotlib.backend_tools import ToolBase, ToolToggleBase
+# Custom Library Imports
+import labellerData as dataLib
+import labellerTools as toolsLib
 
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from pyuvdata import UVData
+# Other Libraries
 import numpy as np
 
-import random
-
-# UVData management
-class Data():
-	def __init__(self):
-		self.UV = UVData()
-
-	def setFile(self,filename):
-		self.filename = filename
-		self.UV.read(self.filename) 	# Functional. But testing means I want faster load times
-		#self.UV.read(self.filename, read_data=False, read_metadata=True)
-		self.pairs = self.UV.get_antpairs()
-		print(self.pairs)
-		self.ants = self.UV.get_ants()
-		self.currAnts = list(self.pairs[0])
-		self.pols = self.UV.get_pols()
-		self.pol = self.pols[0]
-
-	def setFiles(self,filenames):
-		self.files = filenames
-
-	def setAnts(self,a=None,b=None):
-		if a != self.currAnts[0] and a is not None:
-			if (a, self.currAnts[1]) in self.pairs:
-				self.currAnts = [a, self.currAnts[1]]
-			elif (self.currAnts[1], a) in self.pairs:
-				self.currAnts = [self.currAnts[1], a]
-		if b != self.currAnts[1] and b is not None:
-			if (self.currAnts[0], b) in self.pairs:
-				self.currAnts = [self.currAnts[0], b]
-			elif (b, self.currAnts[0]) in self.pairs:
-				self.currAnts = [b, self.currAnts[0]]
-		# else tooltip error
-
-		print('ants', self.currAnts)
-
-	def setPol(self, pol):
-		self.pol = pol
-	def flagger():
-		pass
 
 # Matplotlib management
+# Widget calls PlotCanvas which is a child of GraphWindow
 class WidgetPlot(QtWidgets.QWidget):
-	def __init__(self, *args, **kwargs):
+	def __init__(self, data, *args, **kwargs):
 		QtWidgets.QWidget.__init__(self, *args, **kwargs)
 		self.setLayout(QtWidgets.QVBoxLayout())
 		self.canvas = PlotCanvas(self, width=10, height=10)
-		self.toolbar = MyToolbar(self.canvas, self)
-		#self.toolbar.toolmanager.add_tool('Labelling', LabelTool, Annotate)
-
+		self.toolbar = toolsLib.MyToolbar(data, self.canvas, self)
 		self.layout().addWidget(self.toolbar)
 		self.layout().addWidget(self.canvas)
 
@@ -81,15 +37,10 @@ class GraphWindow(FigureCanvas):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
 		self.cbar = self.fig.add_axes([0.925, 0.1, 0.035, 0.8])
-		self.compute_initial_figure()
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 		FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
 		FigureCanvas.updateGeometry(self)
-		self.annotate = Annotate(self.axes)
-		
-	def compute_initial_figure(self):
-		pass
 
 class PlotCanvas(GraphWindow):
 	"""A canvas that updates itself every second with a new plot."""
@@ -104,63 +55,27 @@ class PlotCanvas(GraphWindow):
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
 
-class MyToolbar(NavigationToolbar):
-  def __init__(self, canvas, parent=None):
-    NavigationToolbar.__init__(self, canvas, parent)
-    self.canvas = canvas
-    #self.annotate = annotate
-    #self.iconDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-    #    "..", "images", "icons", "")
 
-    #self.a = self.addAction(QIcon(iconDir + "BYE2.ico"),
-    self.a = self.addAction("Annotate", self.canvas.annotate.toggle)
+# Label Management
+class TreeWidget(QtWidgets.QWidget):
+	def __init__(self, data, *args, **kwargs):
+		QtWidgets.QWidget.__init__(self, *args, **kwargs)
+		self.data = data
+		self.setLayout(QtWidgets.QVBoxLayout())
+		tw = QtWidgets.QTreeWidget(self)
+		tw.resize(200, 500)
+		tw.updateGeometry()
+		tw.setColumnCount(1)
+		tw.setColumnWidth(1, 80)
+		tw.setHeaderLabels(["Keywords"])
+		initGroup = QtWidgets.QTreeWidgetItem(['no group'])
+		tw.addTopLevelItem(initGroup)
+		self.layout().addWidget(tw)
+		self.resize(self.sizeHint().width(), self.minimumHeight())
 
-class Annotate(object):
-	def __init__(self, canvas):
-		self.labeling = True
-		self.ax = canvas
-		self.rect = matplotlib.patches.Rectangle((0,0), 1, 1, color='white')
-		self.x0 = None
-		self.y0 = None
-		self.x1 = None
-		self.y1 = None
-		self.pressed = False
-		self.ax.add_patch(self.rect)
-		self.ax.figure.canvas.mpl_connect('button_press_event', self.on_press)
-		self.ax.figure.canvas.mpl_connect('button_release_event', self.on_release)
-		self.ax.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
-
-	def toggle(self):
-		self.labeling = not self.labeling
-		print(self.labeling, 'hello')
-
-	def on_press(self, event):
-		if self.labeling:
-			self.pressed = True
-			self.x0 = event.xdata
-			self.y0 = event.ydata
-
-	def on_release(self, event):
-		if self.labeling:
-			self.pressed = False
-			self.x1 = event.xdata
-			self.y1 = event.ydata
-			self.rect.set_width(self.x1 - self.x0)
-			self.rect.set_height(self.y1 - self.y0)
-			self.rect.set_xy((self.x0, self.y0))
-			self.ax.figure.canvas.draw()
-
-	def on_motion(self, event):
-		if self.pressed and self.labeling:
-			self.x1 = event.xdata
-			self.y1 = event.ydata
-			self.rect.set_width(self.x1 - self.x0)
-			self.rect.set_height(self.y1 - self.y0)
-			self.rect.set_xy((self.x0, self.y0))
-			self.rect.set_linestyle('dashed')
-			self.ax.figure.canvas.draw()
 
 # GUI management
+# This handles the entire window
 class Main(QtWidgets.QMainWindow):
 	def __init__(self):
 		QtWidgets.QMainWindow.__init__(self)
@@ -174,8 +89,9 @@ class Main(QtWidgets.QMainWindow):
 		mainMenu = self.initMenuBar()
 		self.activeWindow = QtWidgets.QWidget()
 		self.setCentralWidget(self.activeWindow)
-		self.data = Data()
-
+		# Init data class
+		self.data = dataLib.Data()
+		# Plot
 		self.initGraphWin()
 		self.show()
 		
@@ -189,18 +105,18 @@ class Main(QtWidgets.QMainWindow):
 		options = QtWidgets.QFileDialog.Options()
 		#options |= QtWidgets.QFileDialog.DontUseNativeDialog
 		options =  QtWidgets.QFileDialog.ShowDirsOnly
-		files = QtWidgets.QFileDialog.getExistingDirectory(self,"Select UV file", "", options=options)
-		self.data.setFile(files)
+		file = QtWidgets.QFileDialog.getExistingDirectory(self,"Select UV file", "", options=options)
+		self.data.setFile(file)
 		self.aData = [str(x) for x in self.data.ants]
-		self.bData = [str(x) for x in self.data.ants]
 		self.pData = self.data.pols
 		self.aCBox.clear()	   # delete all items from comboBox
 		self.bCBox.clear()
 		self.pCBox.clear()
 		self.aCBox.addItems(self.aData) # add the actual content of self.comboData
-		self.bCBox.addItems(self.bData)
+		self.bCBox.addItems(self.aData)
 		self.pCBox.addItems(self.pData)
 		self.plot.update(self.data)
+
 	def saveFile(self):
 		options = QtWidgets.QFileDialog.Options()
 		options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -227,11 +143,6 @@ class Main(QtWidgets.QMainWindow):
 		self.menuBar().addMenu(self.help_menu)
 
 		self.help_menu.addAction('&About', self.about)
-
-		self.openFileNamesDialog()
-		self.saveFileDialog()
-		 
-		self.show()
 
 		'''
 
@@ -305,12 +216,13 @@ class Main(QtWidgets.QMainWindow):
 		helpMenu = menubar.addMenu('&Help')
 		helpMenu.addAction(helpAct)
 
-		menubar.setNativeMenuBar(False) # for macs only?
+		menubar.setNativeMenuBar(True) # debatable
 		return menubar
 
 	def initGraphWin(self):
 		# Graph
-		self.plot = WidgetPlot(self)
+		self.plot = WidgetPlot(self.data, self)
+		self.tree = TreeWidget(self.data, self)
 
 		#Info window
 		ant1 = QtWidgets.QLabel('Antenna')
@@ -319,13 +231,13 @@ class Main(QtWidgets.QMainWindow):
 		notes = QtWidgets.QLabel('Notes')
 
 		self.aCBox = QtWidgets.QComboBox()
-		self.aCBox.currentIndexChanged.connect(self.selection)
+		self.aCBox.currentIndexChanged.connect(lambda idx: self.selectCombo(idx, 0))
 		self.bCBox = QtWidgets.QComboBox()
-		self.bCBox.currentIndexChanged.connect(self.selection2)
+		self.bCBox.currentIndexChanged.connect(lambda idx: self.selectCombo(idx, 1))
 		self.pCBox = QtWidgets.QComboBox()
-		self.pCBox.currentIndexChanged.connect(self.selection3)
+		self.pCBox.currentIndexChanged.connect(lambda idx: self.selectCombo(idx, 2))
 
-		notesEdit = QtWidgets.QTextEdit()
+		self.notesEdit = QtWidgets.QTextEdit()
 		vlay = QtWidgets.QVBoxLayout()
 		vlay.addWidget(self.plot)
 		hlay = QtWidgets.QHBoxLayout()
@@ -337,23 +249,30 @@ class Main(QtWidgets.QMainWindow):
 		hlay.addWidget(pol)
 		hlay.addWidget(self.pCBox)
 		vlay.addWidget(notes)
-		vlay.addWidget(notesEdit)
-		self.activeWindow.setLayout(vlay)
+		vlay.addWidget(self.notesEdit)
 
-	def selection(self, idx):
-		self.data.setAnts(int(self.aData[idx]))
-		self.plot.update(self.data)
+		hlayMain = QtWidgets.QHBoxLayout()
+		hlayMain.addLayout(vlay)
+		hlayMain.addWidget(self.tree)
+		self.activeWindow.setLayout(hlayMain)
 
-	def selection2(self, idx):
-		self.data.setAnts(None, int(self.bData[idx]))
+	def selectCombo(self, idx, cBoxType):
+		if cBoxType == 0:
+			self.data.setAnts(int(self.aData[idx]))
+		elif cBoxType == 1:
+			self.data.setAnts(None, int(self.aData[idx]))
+		elif cBoxType == 2:
+			self.data.setPol(self.pData[idx])
+		else: 
+			print('Problem') #error handle later
 		self.plot.update(self.data)
-	def selection3(self, idx):
-		self.data.setPol(self.pData[idx])
-		self.plot.update(self.data)
+		#print(self.notesEdit.toPlainText())
+		#self.notesEdit.setPlainText()
+		#self.notesEdit.clear()
 
 if __name__ == '__main__':
 	app = QtWidgets.QApplication(sys.argv)
 	ex = Main()
-	ex.setWindowTitle("UV Labeler")
+	ex.setWindowTitle("UV Labeller")
 	ex.show()
 	sys.exit(app.exec_())
