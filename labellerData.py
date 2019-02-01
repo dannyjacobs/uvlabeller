@@ -9,10 +9,12 @@ import random
 class Data():
 	def __init__(self):
 		self.UV = UVData()
+		self.labels = {}
 
-	def setFile(self,filename):
+	def setFile(self,filename, idx=0):
 		self.filename = filename
-		self.UV.read(self.filename)
+		self.idx = idx
+		self.UV.read(self.filename[idx])
 		self.pairs = self.UV.get_antpairs()
 		self.ants = self.UV.get_ants()
 		self.currAnts = list(self.pairs[0])
@@ -21,6 +23,12 @@ class Data():
 
 	def setFiles(self,filenames):
 		self.files = filenames
+		self.setFile(self.files[0])
+
+	def nextFile(self):
+		if self.files:
+			idx = (self.idx + 1)%len(self.files)
+			self.setFile(self.files[self.idx], idx)
 
 	def setAnts(self,a=None,b=None):
 		if a != self.currAnts[0] and a is not None:
@@ -35,11 +43,34 @@ class Data():
 				self.currAnts = [b, self.currAnts[0]]
 		# else tooltip error
 
-
 	def setPol(self, pol):
 		self.pol = pol
-	def flagger(self):
+
+	def saveLabel(self, keywords, notes, rectAttrib):
+		if self.filename not in self.labels:
+			# Notes for later:
+			# ask about when flipped if unique or join
+			# use tuple(self.currAnts) instead? dictionaries are weird...
+			self.labels[self.filename] = {(self.currAnts[0], self.currAnts[1], self.pol):
+											[{'id': 0, 'keywords':keywords, 'notes':notes, 'rect': rectAttrib}]}
+		elif (self.currAnts[0], self.currAnts[1], self.pol) not in self.labels[self.filename]:
+			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)] = [{'id': 0, 
+											'keywords':keywords, 'notes':notes, 'rect': rectAttrib}]
+		else:
+			nextId = self.getNextAvailableId()
+			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)].append({
+											'id': nextId, 'keywords':keywords, 'notes':notes, 'rect': rectAttrib})
+
+	def getNextAvailableId(self):
+		labels = self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)]
+		ids = [l['id'] for l in labels]
+		diff = set(a).symmetric_difference(set(range(0, max(ids))))
+		if diff == {}:
+			diff = {max(ids) + 1}
+		return min(diff)
+
+	def updateLabel(self):
 		pass
 
-	def saveLabels(self):
+	def delLabel(self, filename, currAnts, pol, id):
 		pass
