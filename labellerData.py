@@ -66,6 +66,7 @@ class Data(QtCore.QObject):
 			self.notes = txt
 
 	def saveRect(self, coords=None, width=None, height=None, **kwargs):
+		print('data', coords, width, height)
 		if self.recentRectangle is not None:
 			print(self.recentRectangle)
 			self.saveLabel()
@@ -78,25 +79,26 @@ class Data(QtCore.QObject):
 			self.recentRectangle = None
 
 	def saveLabel(self):
+		keywords = self.keywords.split(',') if self.keywords is not None else None
 		if self.filename not in self.labels:
 			# Notes for later:
 			# ask about when flipped if unique or join
 			# use tuple(self.currAnts) instead? dictionaries are weird...
 			self.labels[self.filename] = {(self.currAnts[0], self.currAnts[1], self.pol):
-											[{'id': 0, 'keywords':self.keywords.split(','), 'notes':self.notes, 'rect': self.recentRectangle}]}
+											[{'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}]}
 		elif (self.currAnts[0], self.currAnts[1], self.pol) not in self.labels[self.filename]:
 			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)] = [{'id': 0, 
-											'keywords':self.keywords.split(','), 'notes':self.notes, 'rect': self.recentRectangle}]
+											'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}]
 		else:
 			nextId = self.getNextAvailableId()
 			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)].append({
-											'id': nextId, 'keywords':self.keywords.split(','), 'notes':self.notes, 'rect': self.recentRectangle})
+											'id': nextId, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle})
 		print(self.labels)
 
 	def getNextAvailableId(self):
 		labels = self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)]
 		ids = [l['id'] for l in labels]
-		diff = set(a).symmetric_difference(set(range(0, max(ids))))
+		diff = set(ids).symmetric_difference(set(range(0, max(ids))))
 		if diff == {}:
 			diff = {max(ids) + 1}
 		return min(diff)

@@ -242,7 +242,7 @@ class Main(QtWidgets.QMainWindow):
 		self.keysEdit = QtWidgets.QLineEdit()
 		self.keysEdit.textChanged.connect(lambda txt: self.data.updateText(txt, 0))
 		self.notesEdit = QtWidgets.QTextEdit()
-		#self.notesEdit.textChanged.connect(lambda txt: self.data.updateText(txt, 1))
+		self.notesEdit.textChanged.connect(lambda: self.data.updateText(self.notesEdit.toPlainText(), 1))
 
 		vlay = QtWidgets.QVBoxLayout()
 		vlay.addWidget(self.plot)
