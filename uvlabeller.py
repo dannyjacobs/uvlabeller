@@ -81,7 +81,7 @@ class Main(QtWidgets.QMainWindow):
 		QtWidgets.QMainWindow.__init__(self)
 		self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 		
-		self.resize(800,500)
+		self.resize(900,600)
 		self.center()
 		self.statusBar()
 
@@ -91,6 +91,7 @@ class Main(QtWidgets.QMainWindow):
 		self.setCentralWidget(self.activeWindow)
 		# Init data class
 		self.data = dataLib.Data()
+		self.data.clear.connect(self.clearTxt)
 		# Plot
 		self.initGraphWin()
 		self.show()
@@ -228,6 +229,7 @@ class Main(QtWidgets.QMainWindow):
 		ant1 = QtWidgets.QLabel('Antenna')
 		ant2 = QtWidgets.QLabel('Antenna')
 		pol = QtWidgets.QLabel('Polarization')
+		keywords = QtWidgets.QLabel('Keywords (comma separated)')
 		notes = QtWidgets.QLabel('Notes')
 
 		self.aCBox = QtWidgets.QComboBox()
@@ -237,7 +239,11 @@ class Main(QtWidgets.QMainWindow):
 		self.pCBox = QtWidgets.QComboBox()
 		self.pCBox.currentIndexChanged.connect(lambda idx: self.selectCombo(idx, 2))
 
+		self.keysEdit = QtWidgets.QLineEdit()
+		self.keysEdit.textChanged.connect(lambda txt: self.data.updateText(txt, 0))
 		self.notesEdit = QtWidgets.QTextEdit()
+		#self.notesEdit.textChanged.connect(lambda txt: self.data.updateText(txt, 1))
+
 		vlay = QtWidgets.QVBoxLayout()
 		vlay.addWidget(self.plot)
 		hlay = QtWidgets.QHBoxLayout()
@@ -248,6 +254,8 @@ class Main(QtWidgets.QMainWindow):
 		hlay.addWidget(self.bCBox)
 		hlay.addWidget(pol)
 		hlay.addWidget(self.pCBox)
+		vlay.addWidget(keywords)
+		vlay.addWidget(self.keysEdit)
 		vlay.addWidget(notes)
 		vlay.addWidget(self.notesEdit)
 
@@ -266,9 +274,15 @@ class Main(QtWidgets.QMainWindow):
 		else: 
 			print('Problem') #error handle later
 		self.plot.update(self.data)
-		#print(self.notesEdit.toPlainText())
-		#self.notesEdit.setPlainText()
-		#self.notesEdit.clear()
+
+	@QtCore.pyqtSlot(bool)
+	def clearTxt(self, clear):
+		if self.data.clear:
+			self.keysEdit.clear()
+			self.notesEdit.clear()
+		#catch signal from labeller to clear
+
+
 
 if __name__ == '__main__':
 	app = QtWidgets.QApplication(sys.argv)

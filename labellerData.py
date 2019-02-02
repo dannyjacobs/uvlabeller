@@ -3,18 +3,27 @@
 from pyuvdata import UVData
 import numpy as np
 
+# Signals
+from PyQt5 import QtCore
+
 import random
 
 # UVData management
-class Data():
+class Data(QtCore.QObject):
+	clear = QtCore.pyqtSignal(bool)
+
 	def __init__(self):
+		super(Data, self).__init__()
 		self.UV = UVData()
 		self.labels = {}
+		self.recentRectangle = None
+		self.keywords = None
+		self.notes = None
 
 	def setFile(self,filename, idx=0):
 		self.filename = filename
 		self.idx = idx
-		self.UV.read(self.filename[idx])
+		self.UV.read(self.filename)
 		self.pairs = self.UV.get_antpairs()
 		self.ants = self.UV.get_ants()
 		self.currAnts = list(self.pairs[0])
@@ -31,6 +40,9 @@ class Data():
 			self.setFile(self.files[self.idx], idx)
 
 	def setAnts(self,a=None,b=None):
+		if tuple(self.currAnts) in self.pairs or (self.currAnts[1], self.currAnts[0] in self.pairs):
+			self.saveRect()
+
 		if a != self.currAnts[0] and a is not None:
 			if (a, self.currAnts[1]) in self.pairs:
 				self.currAnts = [a, self.currAnts[1]]
@@ -46,20 +58,40 @@ class Data():
 	def setPol(self, pol):
 		self.pol = pol
 
-	def saveLabel(self, keywords, notes, rectAttrib):
+	def updateText(self, txt, txtType):
+		print(txt)
+		if txtType == 0:
+			self.keywords = txt
+		elif txtType == 1:
+			self.notes = txt
+
+	def saveRect(self, coords=None, width=None, height=None, **kwargs):
+		if self.recentRectangle is not None:
+			print(self.recentRectangle)
+			self.saveLabel()
+			self.clear.emit(True)
+		if coords is not None:
+			self.recentRectangle = [coords, width, height]
+			print('data', coords, width, height)
+			print(self.recentRectangle, 'saved')
+		else:
+			self.recentRectangle = None
+
+	def saveLabel(self):
 		if self.filename not in self.labels:
 			# Notes for later:
 			# ask about when flipped if unique or join
 			# use tuple(self.currAnts) instead? dictionaries are weird...
 			self.labels[self.filename] = {(self.currAnts[0], self.currAnts[1], self.pol):
-											[{'id': 0, 'keywords':keywords, 'notes':notes, 'rect': rectAttrib}]}
+											[{'id': 0, 'keywords':self.keywords.split(','), 'notes':self.notes, 'rect': self.recentRectangle}]}
 		elif (self.currAnts[0], self.currAnts[1], self.pol) not in self.labels[self.filename]:
 			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)] = [{'id': 0, 
-											'keywords':keywords, 'notes':notes, 'rect': rectAttrib}]
+											'keywords':self.keywords.split(','), 'notes':self.notes, 'rect': self.recentRectangle}]
 		else:
 			nextId = self.getNextAvailableId()
 			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)].append({
-											'id': nextId, 'keywords':keywords, 'notes':notes, 'rect': rectAttrib})
+											'id': nextId, 'keywords':self.keywords.split(','), 'notes':self.notes, 'rect': self.recentRectangle})
+		print(self.labels)
 
 	def getNextAvailableId(self):
 		labels = self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)]
