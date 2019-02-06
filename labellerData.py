@@ -80,25 +80,27 @@ class Data(QtCore.QObject):
 	def saveLabel(self):
 		keywords = list(set(self.keywords.split(','))) if self.keywords is not None else ['no group']
 		newEntry = {'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}
+		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
 		if self.filename not in self.labels:
 			# Notes for later:
 			# ask about when flipped if unique or join
 			# use tuple(self.currAnts) instead? dictionaries are weird...
-			self.labels[self.filename] = {(self.currAnts[0], self.currAnts[1], self.pol):[newEntry]}
+			self.labels[self.filename] = {str(dictID):[newEntry]}
 			self.updateTree(keywords, 0)
-		elif (self.currAnts[0], self.currAnts[1], self.pol) not in self.labels[self.filename]:
-			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)] = [newEntry]
+		elif str(dictID) not in self.labels[self.filename]:
+			self.labels[self.filename][str(dictID)] = [newEntry]
 			self.updateTree(keywords, 0)
 		else:
 			nextId = self.getNextAvailableId()
-			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)].append({
+			self.labels[self.filename][str(dictID)].append({
 								'id': nextId, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle})
 			self.updateTree(keywords, nextId)
 
 		print(self.labels)
 
 	def getNextAvailableId(self):
-		labels = self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)]
+		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
+		labels = self.labels[self.filename][str(dictID)]
 		ids = [l['id'] for l in labels]
 		diff = set(ids).symmetric_difference(set(range(0, max(ids))))
 		if diff == {}:
@@ -114,7 +116,7 @@ class Data(QtCore.QObject):
 	# if file has labels
 	def getLabels(self,oldLabels=None):
 		if oldLabels == None and self.keys == {}:
-			self.keys = {'no group': ''}
+			self.keys = {'no group': []}
 		else:
 			keys = {}
 			for t in oldLabels[self.filename]: #tuples
@@ -128,7 +130,8 @@ class Data(QtCore.QObject):
 
 	# adding new labels
 	def updateTree(self, keys, newID):
-		label = str(self.currAnts[0], self.currAnts[1], self.pol) + str(newID)
+		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
+		label = str(dictID) + str(newID)
 		for k in keys:
 			if k not in self.keys:
 				self.keys[k] = [label]

@@ -44,7 +44,7 @@ class Annotate(object):
 			self.rect.set_width(self.x1 - self.x0)
 			self.rect.set_height(self.y1 - self.y0)
 			# get rectangle attributes vertices, coordinates
-			#self.data.saveRect(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height())
+			self.data.saveRect(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height())
 			rect = matplotlib.patches.Rectangle(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height(), color='white', alpha=0.3)
 			self.axes.add_patch(rect)
 			#self.rects.append(rect)
