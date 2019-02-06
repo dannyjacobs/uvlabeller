@@ -12,6 +12,7 @@ class Annotate(object):
 		self.labeling = False
 		self.data = data
 		self.axes = axes
+		#self.rects = [] # to be used with ids for selection later
 		self.rect = matplotlib.patches.Rectangle((0,0), 1, 1, color='white', alpha=0.5)
 		self.x0 = None
 		self.y0 = None
@@ -43,7 +44,10 @@ class Annotate(object):
 			self.rect.set_width(self.x1 - self.x0)
 			self.rect.set_height(self.y1 - self.y0)
 			# get rectangle attributes vertices, coordinates
-			self.data.saveRect(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height())
+			#self.data.saveRect(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height())
+			rect = matplotlib.patches.Rectangle(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height(), color='white', alpha=0.3)
+			self.axes.add_patch(rect)
+			#self.rects.append(rect)
 			self.axes.figure.canvas.draw()
 
 	def on_motion(self, event):

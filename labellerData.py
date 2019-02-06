@@ -11,6 +11,7 @@ import random
 # UVData management
 class Data(QtCore.QObject):
 	clear = QtCore.pyqtSignal(bool)
+	addLabel = QtCore.pyqtSignal(str, str, int)
 
 	def __init__(self):
 		super(Data, self).__init__()
@@ -19,6 +20,7 @@ class Data(QtCore.QObject):
 		self.recentRectangle = None
 		self.keywords = None
 		self.notes = None
+		self.keys = {}
 
 	def setFile(self,filename, idx=0):
 		self.filename = filename
@@ -29,6 +31,7 @@ class Data(QtCore.QObject):
 		self.currAnts = list(self.pairs[0])
 		self.pols = self.UV.get_pols()
 		self.pol = self.pols[0]
+		self.getLabels(None) # eventually will have someway to get saved labels
 
 	def setFiles(self,filenames):
 		self.files = filenames
@@ -66,33 +69,32 @@ class Data(QtCore.QObject):
 			self.notes = txt
 
 	def saveRect(self, coords=None, width=None, height=None, **kwargs):
-		print('data', coords, width, height)
 		if self.recentRectangle is not None:
-			print(self.recentRectangle)
 			self.saveLabel()
 			self.clear.emit(True)
 		if coords is not None:
 			self.recentRectangle = [coords, width, height]
-			print('data', coords, width, height)
-			print(self.recentRectangle, 'saved')
 		else:
 			self.recentRectangle = None
 
 	def saveLabel(self):
-		keywords = self.keywords.split(',') if self.keywords is not None else None
+		keywords = list(set(self.keywords.split(','))) if self.keywords is not None else ['no group']
+		newEntry = {'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}
 		if self.filename not in self.labels:
 			# Notes for later:
 			# ask about when flipped if unique or join
 			# use tuple(self.currAnts) instead? dictionaries are weird...
-			self.labels[self.filename] = {(self.currAnts[0], self.currAnts[1], self.pol):
-											[{'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}]}
+			self.labels[self.filename] = {(self.currAnts[0], self.currAnts[1], self.pol):[newEntry]}
+			self.updateTree(keywords, 0)
 		elif (self.currAnts[0], self.currAnts[1], self.pol) not in self.labels[self.filename]:
-			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)] = [{'id': 0, 
-											'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}]
+			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)] = [newEntry]
+			self.updateTree(keywords, 0)
 		else:
 			nextId = self.getNextAvailableId()
 			self.labels[self.filename][(self.currAnts[0], self.currAnts[1], self.pol)].append({
-											'id': nextId, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle})
+								'id': nextId, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle})
+			self.updateTree(keywords, nextId)
+
 		print(self.labels)
 
 	def getNextAvailableId(self):
@@ -108,3 +110,30 @@ class Data(QtCore.QObject):
 
 	def delLabel(self, filename, currAnts, pol, id):
 		pass
+
+	# if file has labels
+	def getLabels(self,oldLabels=None):
+		if oldLabels == None and self.keys == {}:
+			self.keys = {'no group': ''}
+		else:
+			keys = {}
+			for t in oldLabels[self.filename]: #tuples
+				for l in oldLabels[self.filename][t]: #label
+					for k in oldLabels[self.filename][t][l]['keywords']:
+						if k not in keys:
+							keys[k] = [str(oldLabels[self.filename][t]) + str(oldLabels[self.filename][t][l]['keywords']['id'])]
+						else:
+							keys[k].append(str(oldLabels[self.filename][t]) + str(oldLabels[self.filename][t][l]['keywords']['id']))
+			self.keys = keys
+
+	# adding new labels
+	def updateTree(self, keys, newID):
+		label = str(self.currAnts[0], self.currAnts[1], self.pol) + str(newID)
+		for k in keys:
+			if k not in self.keys:
+				self.keys[k] = [label]
+				self.addLabel.emit(k, label, 0)
+			else:
+				self.keys[k].append(label)
+				self.addLabel.emit(k, label, 1)
+
