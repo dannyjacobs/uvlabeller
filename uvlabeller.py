@@ -32,10 +32,16 @@ class WidgetPlot(QtWidgets.QWidget):
 	def update(self, data):
 		self.canvas.update_figure(data)
 
+	def setTitle(self, filename):
+		self.canvas.updateTitle(filename)
+
 class GraphWindow(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
+		self.axes.set_title(' ')
+		self.axes.set_xlabel(' ')
+		self.axes.set_ylabel(' ')
 		self.cbar = self.fig.add_axes([0.925, 0.1, 0.035, 0.8])
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
@@ -43,17 +49,23 @@ class GraphWindow(FigureCanvas):
 		FigureCanvas.updateGeometry(self)
 
 class PlotCanvas(GraphWindow):
-	"""A canvas that updates itself every second with a new plot."""
-
 	def __init__(self, *args, **kwargs):
 		GraphWindow.__init__(self, *args, **kwargs)
 
 	def update_figure(self, data):
 		#data.UV.read(data.filename, bls=[(data.currAnts[0],data.currAnts[1])])
 		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],data.pol))
-		im = self.axes.imshow(np.abs(calc), aspect='auto', extent=[0,1000,60,0], vmin=0, vmax=2.0*np.median(np.abs(calc)))
+		tmax = (data.UV.time_array.max() - data.UV.time_array.min()) * 24. * 60 * 60
+		extent = [data.UV.freq_array.min() * 1e-6, data.UV.freq_array.max() * 1e-6, tmax, 0]
+		im = self.axes.imshow(np.abs(calc), aspect='auto', extent=extent, vmin=0, vmax=2.0*np.median(np.abs(calc)))
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
+
+	def updateTitle(self, filename):
+		name = filename.split('/')[-1] if '/' in filename else filename.split('\\')[-1]
+		self.axes.set_title(name)
+		self.axes.set_xlabel('Freq (MHz)')
+		self.axes.set_ylabel('Time (s)')
 
 
 # Label Management
@@ -107,7 +119,7 @@ class Main(QtWidgets.QMainWindow):
 		QtWidgets.QMainWindow.__init__(self)
 		self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 		
-		self.resize(900,600)
+		self.resize(1000,600)
 		self.center()
 		self.statusBar()
 
@@ -143,6 +155,7 @@ class Main(QtWidgets.QMainWindow):
 		self.bCBox.addItems(self.aData)
 		self.pCBox.addItems(self.pData)
 		self.plot.update(self.data)
+		self.plot.setTitle(file)
 
 	def saveFile(self):
 		options = QtWidgets.QFileDialog.Options()
