@@ -45,8 +45,6 @@ class Annotate(object):
 			self.rect.set_height(self.y1 - self.y0)
 			# get rectangle attributes vertices, coordinates
 			self.data.saveRect(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height())
-			rect = matplotlib.patches.Rectangle(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height(), color='white', alpha=0.3)
-			self.axes.add_patch(rect)
 			#self.rects.append(rect)
 			self.axes.figure.canvas.draw()
 
@@ -60,6 +58,9 @@ class Annotate(object):
 			self.rect.set_linestyle('dashed')
 			self.axes.figure.canvas.draw()
 
+	def addRect(self):
+		rect = matplotlib.patches.Rectangle(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height(), color='white', alpha=0.3)
+		self.axes.add_patch(rect) # can I just patch self.rect?
 
 class MyToolbar(NavigationToolbar):
 	def __init__(self, data, canvas, parent=None):

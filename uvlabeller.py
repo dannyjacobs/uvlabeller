@@ -35,6 +35,9 @@ class WidgetPlot(QtWidgets.QWidget):
 	def setTitle(self, filename):
 		self.canvas.updateTitle(filename)
 
+	def addRect(self):
+		self.toolbar.ann.addRect()
+
 class GraphWindow(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
@@ -129,7 +132,6 @@ class Main(QtWidgets.QMainWindow):
 		self.setCentralWidget(self.activeWindow)
 		# Init data class
 		self.data = dataLib.Data()
-		self.data.clear.connect(self.clearTxt)
 		# Plot
 		self.initGraphWin()
 		self.show()
@@ -271,7 +273,6 @@ class Main(QtWidgets.QMainWindow):
 		pol = QtWidgets.QLabel('Polarization')
 		keywords = QtWidgets.QLabel('Keywords (comma separated)')
 		notes = QtWidgets.QLabel('Notes')
-
 		self.aCBox = QtWidgets.QComboBox()
 		self.aCBox.currentIndexChanged.connect(lambda idx: self.selectCombo(idx, 0))
 		self.bCBox = QtWidgets.QComboBox()
@@ -280,9 +281,11 @@ class Main(QtWidgets.QMainWindow):
 		self.pCBox.currentIndexChanged.connect(lambda idx: self.selectCombo(idx, 2))
 
 		self.keysEdit = QtWidgets.QLineEdit()
-		self.keysEdit.textChanged.connect(lambda txt: self.data.updateText(txt, 0))
 		self.notesEdit = QtWidgets.QTextEdit()
-		self.notesEdit.textChanged.connect(lambda: self.data.updateText(self.notesEdit.toPlainText(), 1))
+
+		self.saveBtn = QtWidgets.QPushButton("Save label")
+		self.saveBtn.setEnabled(True) # connect to labelling to be disabled otherwise
+		self.saveBtn.clicked.connect(self.saveLabel)
 
 		vlay = QtWidgets.QVBoxLayout()
 		vlay.addWidget(self.plot)
@@ -294,7 +297,10 @@ class Main(QtWidgets.QMainWindow):
 		hlay.addWidget(self.bCBox)
 		hlay.addWidget(pol)
 		hlay.addWidget(self.pCBox)
-		vlay.addWidget(keywords)
+		hlay2 = QtWidgets.QHBoxLayout()
+		hlay2.addWidget(keywords)
+		hlay2.addWidget(self.saveBtn)
+		vlay.addLayout(hlay2)
 		vlay.addWidget(self.keysEdit)
 		vlay.addWidget(notes)
 		vlay.addWidget(self.notesEdit)
@@ -315,14 +321,11 @@ class Main(QtWidgets.QMainWindow):
 			print('Problem') #error handle later
 		self.plot.update(self.data)
 
-	@QtCore.pyqtSlot(bool)
-	def clearTxt(self, clear):
-		if self.data.clear:
-			self.keysEdit.clear()
-			self.notesEdit.clear()
-		#catch signal from labeller to clear
-
-
+	def saveLabel(self):
+		self.data.saveLabel(self.keysEdit.text(), self.notesEdit.toPlainText())
+		self.plot.addRect()
+		self.keysEdit.clear()
+		self.notesEdit.clear()
 
 if __name__ == '__main__':
 	app = QtWidgets.QApplication(sys.argv)

@@ -12,7 +12,6 @@ import random
 
 # UVData management
 class Data(QtCore.QObject):
-	clear = QtCore.pyqtSignal(bool)
 	addLabel = QtCore.pyqtSignal(str, str, int)
 
 	def __init__(self):
@@ -20,7 +19,6 @@ class Data(QtCore.QObject):
 		self.UV = UVData()
 		self.labels = {}
 		self.recentRectangle = None
-		self.keywords = None
 		self.notes = None
 		self.keys = {}
 
@@ -63,24 +61,18 @@ class Data(QtCore.QObject):
 	def setPol(self, pol):
 		self.pol = pol
 
-	def updateText(self, txt, txtType):
-		if txtType == 0:
-			self.keywords = txt
-		elif txtType == 1:
-			self.notes = txt
-
 	def saveRect(self, coords=None, width=None, height=None, **kwargs):
-		if self.recentRectangle is not None:
-			self.saveLabel()
-			self.clear.emit(True)
+		#if self.recentRectangle is not None:
+		#	self.saveLabel()
+		#	self.clear.emit(True)
 		if coords is not None:
 			self.recentRectangle = [coords, width, height]
 		else:
 			self.recentRectangle = None
 
-	def saveLabel(self):
-		keywords = list(set(self.keywords.split(','))) if self.keywords is not None and self.keywords != '' else ['no group']
-		newEntry = {'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}
+	def saveLabel(self, keywords=None, notes=None):
+		keywords = list(set(keywords.split(','))) if keywords is not None and keywords != '' else ['no group']
+		newEntry = {'id': 0, 'keywords':keywords, 'notes': notes, 'rect': self.recentRectangle}
 		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
 		if self.filename not in self.labels:
 			# Notes for later:
@@ -94,7 +86,7 @@ class Data(QtCore.QObject):
 		else:
 			nextId = self.getNextAvailableId()
 			self.labels[self.filename][str(dictID)].append({
-								'id': nextId, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle})
+								'id': nextId, 'keywords':keywords, 'notes':notes, 'rect': self.recentRectangle})
 			self.updateTree(keywords, nextId)
 
 		print(self.labels)
@@ -147,4 +139,4 @@ class Data(QtCore.QObject):
 		# also no order bc dictionary, again, for now
 		# also need to ensure it does full path
 		with open(exportName, 'w') as fp:
-			json.dump(self.labels, fp)
+			json.dumps(self.labels, fp, indent=4)
