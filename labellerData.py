@@ -62,7 +62,6 @@ class Data(QtCore.QObject):
 		self.pol = pol
 
 	def updateText(self, txt, txtType):
-		print(txt)
 		if txtType == 0:
 			self.keywords = txt
 		elif txtType == 1:
@@ -78,7 +77,7 @@ class Data(QtCore.QObject):
 			self.recentRectangle = None
 
 	def saveLabel(self):
-		keywords = list(set(self.keywords.split(','))) if self.keywords is not None else ['no group']
+		keywords = list(set(self.keywords.split(','))) if self.keywords is not None or self.keywords == '' else ['no group']
 		newEntry = {'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}
 		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
 		if self.filename not in self.labels:
@@ -102,8 +101,8 @@ class Data(QtCore.QObject):
 		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
 		labels = self.labels[self.filename][str(dictID)]
 		ids = [l['id'] for l in labels]
-		diff = set(ids).symmetric_difference(set(range(0, max(ids))))
-		if diff == {}:
+		diff = set(ids).difference(set(range(0, max(ids)+1)))
+		if diff == set():
 			diff = {max(ids) + 1}
 		return min(diff)
 
@@ -117,6 +116,7 @@ class Data(QtCore.QObject):
 	def getLabels(self,oldLabels=None):
 		if oldLabels == None and self.keys == {}:
 			self.keys = {'no group': []}
+			self.addLabel.emit('no group', '', 0)
 		else:
 			keys = {}
 			for t in oldLabels[self.filename]: #tuples
@@ -131,12 +131,12 @@ class Data(QtCore.QObject):
 	# adding new labels
 	def updateTree(self, keys, newID):
 		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
-		label = str(dictID) + str(newID)
+		name = str(dictID) + str(newID)
 		for k in keys:
 			if k not in self.keys:
-				self.keys[k] = [label]
-				self.addLabel.emit(k, label, 0)
+				self.keys[k] = [name]
+				self.addLabel.emit(k, name, 0)
 			else:
-				self.keys[k].append(label)
-				self.addLabel.emit(k, label, 1)
+				self.keys[k].append(name)
+				self.addLabel.emit(k, name, 1)
 

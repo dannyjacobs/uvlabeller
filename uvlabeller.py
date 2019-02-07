@@ -60,8 +60,7 @@ class PlotCanvas(GraphWindow):
 class TreeWidget(QtWidgets.QWidget):
 	def __init__(self, data, *args, **kwargs):
 		QtWidgets.QWidget.__init__(self, *args, **kwargs)
-		self.data = data.keys
-		print(self.data)
+		self.data = data
 		self.setLayout(QtWidgets.QVBoxLayout())
 		self.tw = QtWidgets.QTreeWidget(self)
 		self.tw.resize(200, 500)
@@ -69,11 +68,12 @@ class TreeWidget(QtWidgets.QWidget):
 		self.tw.setColumnCount(1)
 		self.tw.setColumnWidth(1, 80)
 		self.tw.setHeaderLabels(["Keywords"])
-		for l in self.data:
+		self.data.addLabel.connect(self.updateTree)
+		for l in self.data.keys:
 			group = QtWidgets.QTreeWidgetItem([l])
 			for labelID in self.data[l]:
 				item = QtWidgets.QTreeWidgetItem([labelID])
-				group.insertChild(item)
+				group.addChild(item)
 			self.tw.addTopLevelItem(group)
 		self.layout().addWidget(self.tw)
 		self.resize(self.sizeHint().width(), self.minimumHeight())
@@ -81,14 +81,21 @@ class TreeWidget(QtWidgets.QWidget):
 	@QtCore.pyqtSlot(str, str, int)
 	def updateTree(self, label, item, insertType):
 		if insertType == 0:
-			newLabel = QTWidgets.QTreeWidgetItem([label])
-			treeItem = QtWidgets.QTreeWidgetItem([item])
-			newLabel.insertChild(treeItem)
+			newLabel = QtWidgets.QTreeWidgetItem([label])
+			if item != '':
+				treeItem = QtWidgets.QTreeWidgetItem([item])
+				newLabel.addChild(treeItem)
 			self.tw.addTopLevelItem(newLabel)
 		elif insertType == 1:
-			# find label
-			# insert item
-			pass
+			print('r', self.tw.invisibleRootItem())
+			root = self.tw.invisibleRootItem()
+			child_count = root.childCount()
+			for i in range(child_count):
+				if root.child(i).text(0) == label:
+					print('here')
+					treeItem = QtWidgets.QTreeWidgetItem([item])
+					root.child(i).addChild(treeItem)
+					break
 		else:
 			pass # problem
 
