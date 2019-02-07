@@ -154,9 +154,10 @@ class Main(QtWidgets.QMainWindow):
 	def exportFile(self):
 		options = QtWidgets.QFileDialog.Options()
 		options |= QtWidgets.QFileDialog.DontUseNativeDialog
-		fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self,"Export UV file","","All Files (*);;UV Files (*.uv)", options=options)
+		fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self,"Export Labels","","All Files (*);;JSON Files (*.json)", options=options)
 		if fileName:
-			print(fileName)
+			#handler for nonjson
+			self.data.exportLabels(fileName)
 
 	def initMenuBar(self):
 		''' COME BACK TO LATER
@@ -186,7 +187,7 @@ class Main(QtWidgets.QMainWindow):
 
 		exportAct = QtWidgets.QAction('&Export', self)
 		exportAct.setShortcut('Ctrl+E')
-		exportAct.setStatusTip('Export')
+		exportAct.setStatusTip('Export Labels')
 		exportAct.triggered.connect(self.exportFile)
 
 		prefAct = QtWidgets.QAction('&Preferences', self)

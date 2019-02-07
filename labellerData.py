@@ -3,6 +3,8 @@
 from pyuvdata import UVData
 import numpy as np
 
+import json
+
 # Signals
 from PyQt5 import QtCore
 
@@ -140,3 +142,9 @@ class Data(QtCore.QObject):
 				self.keys[k].append(name)
 				self.addLabel.emit(k, name, 1)
 
+	def exportLabels(self, exportName):
+		# write dictionary to json for now
+		# also no order bc dictionary, again, for now
+		# also need to ensure it does full path
+		with open(exportName, 'w') as fp:
+			json.dump(self.labels, fp)
