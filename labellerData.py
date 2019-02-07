@@ -79,7 +79,7 @@ class Data(QtCore.QObject):
 			self.recentRectangle = None
 
 	def saveLabel(self):
-		keywords = list(set(self.keywords.split(','))) if self.keywords is not None or self.keywords == '' else ['no group']
+		keywords = list(set(self.keywords.split(','))) if self.keywords is not None and self.keywords != '' else ['no group']
 		newEntry = {'id': 0, 'keywords':keywords, 'notes':self.notes, 'rect': self.recentRectangle}
 		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
 		if self.filename not in self.labels:
