@@ -38,10 +38,6 @@ class WidgetPlot(QtWidgets.QWidget):
 	def addRect(self):
 		self.toolbar.addRect()
 
-	@QtCore.pyqtSlot(list)
-	def showRects(self, labels):
-		self.toolbar.showRects(labels)
-
 class GraphWindow(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
@@ -60,6 +56,9 @@ class PlotCanvas(GraphWindow):
 		GraphWindow.__init__(self, *args, **kwargs)
 
 	def update_figure(self, data):
+		# Introduces slowness, bug?
+		#[p.remove() for p in reversed(self.axes.patches)]
+		#print('patches', self.axes.patches)
 		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],data.pol))
 		tmax = (data.UV.time_array.max() - data.UV.time_array.min()) * 24. * 60 * 60
 		extent = [data.UV.freq_array.min() * 1e-6, data.UV.freq_array.max() * 1e-6, tmax, 0]
@@ -120,13 +119,6 @@ class TreeWidget(QtWidgets.QWidget):
 			print("Problem")
 
 	def selection(self):
-		# if what's selected is a group, show only those in the given file
-		# if eple groups selected, show those
-		# if multiple labels selected show those
-		# if singular label selected update entries with info for editing (connect button as edit vs save?)
-		# annotations shouldn't be on or annotate should be turned off automatically?
-		# if esc OR click returns nothing show all
-		# on rect selection select label in tree (somehow?) new func?
 		selected = self.tw.selectedItems()
 		root = self.tw.invisibleRootItem()
 		top = []

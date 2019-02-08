@@ -73,7 +73,7 @@ class Data(QtCore.QObject):
 		keywords = list(set(keywords.split(','))) if keywords is not None and keywords != '' else ['no group']
 		keywords = [k.strip() for k in keywords]
 		newEntry = {'id': 0, 'keywords':keywords, 'notes': notes, 'rect': self.recentRectangle}
-		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
+		dictID = (str(self.currAnts), self.pol)
 		if self.filename not in self.labels:
 			# Notes for later:
 			# ask about when flipped if unique or join
@@ -92,7 +92,7 @@ class Data(QtCore.QObject):
 		print(self.labels)
 
 	def getNextAvailableId(self):
-		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
+		dictID = (str(self.currAnts), self.pol)
 		labels = self.labels[self.filename][str(dictID)]
 		ids = [l['id'] for l in labels]
 		diff = set(ids).difference(set(range(0, max(ids)+1)))
@@ -133,7 +133,7 @@ class Data(QtCore.QObject):
 
 	# adding new labels
 	def updateTree(self, keys, newID):
-		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
+		dictID = (str(self.currAnts), self.pol)
 		name = str(dictID) + str(newID)
 		for k in keys:
 			if k not in self.keys:
@@ -142,6 +142,7 @@ class Data(QtCore.QObject):
 			else:
 				self.keys[k].append(name)
 				self.addLabel.emit(k, name, 1)
+
 	@QtCore.pyqtSlot(list, str, int)
 	def selectLabels(self, items, single, lType):
 		print(items, single, lType)

@@ -100,6 +100,3 @@ class MyToolbar(NavigationToolbar):
 		a = self.addAction("Annotate", self.ann.toggle)
 	def addRect(self):
 		self.ann.addRect()
-
-	def showRects(self, labels):
-		self.ann.showRects(labels)
