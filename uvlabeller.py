@@ -2,7 +2,7 @@
 
 # PyQt5 Imports
 import sys
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 # Matplotlib Imports
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -36,7 +36,11 @@ class WidgetPlot(QtWidgets.QWidget):
 		self.canvas.updateTitle(filename)
 
 	def addRect(self):
-		self.toolbar.ann.addRect()
+		self.toolbar.addRect()
+
+	@QtCore.pyqtSlot(list)
+	def showRects(self, labels):
+		self.toolbar.showRects(labels)
 
 class GraphWindow(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -56,7 +60,6 @@ class PlotCanvas(GraphWindow):
 		GraphWindow.__init__(self, *args, **kwargs)
 
 	def update_figure(self, data):
-		#data.UV.read(data.filename, bls=[(data.currAnts[0],data.currAnts[1])])
 		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],data.pol))
 		tmax = (data.UV.time_array.max() - data.UV.time_array.min()) * 24. * 60 * 60
 		extent = [data.UV.freq_array.min() * 1e-6, data.UV.freq_array.max() * 1e-6, tmax, 0]
@@ -73,6 +76,7 @@ class PlotCanvas(GraphWindow):
 
 # Label Management
 class TreeWidget(QtWidgets.QWidget):
+	show = QtCore.pyqtSignal(list, str, int)
 	def __init__(self, data, *args, **kwargs):
 		QtWidgets.QWidget.__init__(self, *args, **kwargs)
 		self.data = data
@@ -83,7 +87,10 @@ class TreeWidget(QtWidgets.QWidget):
 		self.tw.setColumnCount(1)
 		self.tw.setColumnWidth(1, 80)
 		self.tw.setHeaderLabels(["Keywords"])
+		self.tw.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+		self.tw.itemSelectionChanged.connect(self.selection)
 		self.data.addLabel.connect(self.updateTree)
+		self.show.connect(self.data.selectLabels)
 		for l in self.data.keys:
 			group = QtWidgets.QTreeWidgetItem([l])
 			for labelID in self.data[l]:
@@ -102,18 +109,59 @@ class TreeWidget(QtWidgets.QWidget):
 				newLabel.addChild(treeItem)
 			self.tw.addTopLevelItem(newLabel)
 		elif insertType == 1:
-			print('r', self.tw.invisibleRootItem())
 			root = self.tw.invisibleRootItem()
 			child_count = root.childCount()
 			for i in range(child_count):
 				if root.child(i).text(0) == label:
-					print('here')
 					treeItem = QtWidgets.QTreeWidgetItem([item])
 					root.child(i).addChild(treeItem)
 					break
 		else:
-			pass # problem
+			print("Problem")
 
+	def selection(self):
+		# if what's selected is a group, show only those in the given file
+		# if eple groups selected, show those
+		# if multiple labels selected show those
+		# if singular label selected update entries with info for editing (connect button as edit vs save?)
+		# annotations shouldn't be on or annotate should be turned off automatically?
+		# if esc OR click returns nothing show all
+		# on rect selection select label in tree (somehow?) new func?
+		selected = self.tw.selectedItems()
+		root = self.tw.invisibleRootItem()
+		top = []
+		children = []
+		for i in range(root.childCount()):
+			top.append(root.child(i))
+			for j in range(root.child(i).childCount()):
+				children.append(root.child(i).child(j))
+		viewT = []
+		viewC = []
+		if selected:
+			for i in selected:
+				if i in top:
+					viewT.append(i)
+				elif i in children:
+					viewC.append(i)
+				else:
+					print("Problem")
+			if len(viewT) > 0 and len(viewC) > 0:
+				out = []
+				for v in viewT:
+					out.append(v.text(0))
+				self.show.emit(out, viewC[0].text(0), 0)
+			elif len(viewT) > 0 and len(viewC) == 0:
+				out = []
+				for v in viewT:
+					out.append(v.text(0))
+				self.show.emit(out, '', 1)
+			else:
+				out = []
+				for v in viewC:
+					out.append(v.text(0))
+				self.show.emit(out, '', 2)
+		else:
+			self.show.emit([],'', -1)
 
 # GUI management
 # This handles the entire window
@@ -297,7 +345,7 @@ class Main(QtWidgets.QMainWindow):
 		hlay.addWidget(self.bCBox)
 		hlay.addWidget(pol)
 		hlay.addWidget(self.pCBox)
-		hlay2 = QtWidgets.QHBoxLayout()
+		hlay2 = QtWidgets.QHBoxLayout() # space between this and keysEdit odd
 		hlay2.addWidget(keywords)
 		hlay2.addWidget(self.saveBtn)
 		vlay.addLayout(hlay2)

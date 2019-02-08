@@ -19,6 +19,7 @@ class Annotate(object):
 		self.x1 = None
 		self.y1 = None
 		self.pressed = False
+		self.shift = False
 		self.axes.add_patch(self.rect)
 		self.axes.figure.canvas.mpl_connect('button_press_event', self.on_press)
 		self.axes.figure.canvas.mpl_connect('button_release_event', self.on_release)
@@ -31,13 +32,17 @@ class Annotate(object):
 			self.data.saveRect()
 
 	def on_press(self, event):
-		if self.labeling:
+		if self.labeling and not self.shift:
 			self.pressed = True
 			self.x0 = event.xdata
 			self.y0 = event.ydata
+		elif self.pressed and self.labeling and self.shift:
+			# select rect under mouse
+			# move label
+			pass
 
 	def on_release(self, event):
-		if self.labeling:
+		if self.labeling and not self.shift:
 			self.pressed = False
 			self.x1 = event.xdata
 			self.y1 = event.ydata
@@ -47,9 +52,13 @@ class Annotate(object):
 			self.data.saveRect(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height())
 			#self.rects.append(rect)
 			self.axes.figure.canvas.draw()
+		if self.labeling and self.shift:
+			# save selected rect and update pos. 
+			# find and update rect in data
+			pass
 
 	def on_motion(self, event):
-		if self.pressed and self.labeling:
+		if self.pressed and self.labeling and not self.shift:
 			self.x1 = event.xdata
 			self.y1 = event.ydata
 			self.rect.set_width(self.x1 - self.x0)
@@ -57,10 +66,25 @@ class Annotate(object):
 			self.rect.set_xy((self.x0, self.y0))
 			self.rect.set_linestyle('dashed')
 			self.axes.figure.canvas.draw()
+		elif self.pressed and self.labeling and self.shift:
+			# move selected rect
+			pass
+
+	def on_key_press(self, event):
+		if event.key == 'shift':
+			self.shift = True
+
+	def on_key_release(self, event):
+		if event.key == 'shift':
+			self.shift = False
 
 	def addRect(self):
 		rect = matplotlib.patches.Rectangle(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height(), color='white', alpha=0.3)
 		self.axes.add_patch(rect) # can I just patch self.rect?
+
+	#how det. visibility through tree?
+	def showRects(self, labels):
+		pass
 
 class MyToolbar(NavigationToolbar):
 	def __init__(self, data, canvas, parent=None):
@@ -74,3 +98,8 @@ class MyToolbar(NavigationToolbar):
 		#self.a = self.addAction(QIcon(iconDir + "BYE2.ico"),
 		self.addSeparator()
 		a = self.addAction("Annotate", self.ann.toggle)
+	def addRect(self):
+		self.ann.addRect()
+
+	def showRects(self, labels):
+		self.ann.showRects(labels)

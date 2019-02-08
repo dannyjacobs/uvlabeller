@@ -62,16 +62,16 @@ class Data(QtCore.QObject):
 		self.pol = pol
 
 	def saveRect(self, coords=None, width=None, height=None, **kwargs):
-		#if self.recentRectangle is not None:
-		#	self.saveLabel()
-		#	self.clear.emit(True)
 		if coords is not None:
 			self.recentRectangle = [coords, width, height]
 		else:
 			self.recentRectangle = None
 
 	def saveLabel(self, keywords=None, notes=None):
+		# how protect when not labeling?
+		# if self.recentRectangle is not none?
 		keywords = list(set(keywords.split(','))) if keywords is not None and keywords != '' else ['no group']
+		keywords = [k.strip() for k in keywords]
 		newEntry = {'id': 0, 'keywords':keywords, 'notes': notes, 'rect': self.recentRectangle}
 		dictID = (str(self.currAnts[0]), str(self.currAnts[0]), self.pol)
 		if self.filename not in self.labels:
@@ -103,8 +103,17 @@ class Data(QtCore.QObject):
 	def updateLabel(self):
 		pass
 
-	def delLabel(self, filename, currAnts, pol, id):
-		pass
+	def delLabel(self, filename, currAntsPol=None, idLabel=None):
+		keys = self.keys
+		if idLabel is not None:
+			for i in range(keys[filename][currAntsPol], 0, -1):
+				 if keys[filename][currAntsPol][i]['id'] == idLabel:
+				 	del self.keys[filename][currAntsPol][i]
+		elif currAntsPol is not None:
+			del self.keys[filename][currAntsPol]
+		elif idLabel is None and currAntsPol is None:
+			del self.keys[filenames]
+
 
 	# if file has labels
 	def getLabels(self,oldLabels=None):
@@ -133,6 +142,19 @@ class Data(QtCore.QObject):
 			else:
 				self.keys[k].append(name)
 				self.addLabel.emit(k, name, 1)
+	@QtCore.pyqtSlot(list, str, int)
+	def selectLabels(self, items, single, lType):
+		print(items, single, lType)
+		if lType == -1:
+			pass
+		elif lType == 0:
+			pass
+		elif lType == 1:
+			pass
+		elif lType == 2:
+			pass
+		else:
+			print("Problem")
 
 	def exportLabels(self, exportName):
 		# write dictionary to json for now
