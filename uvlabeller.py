@@ -28,6 +28,8 @@ class WidgetPlot(QtWidgets.QWidget):
 		self.toolbar = toolsLib.MyToolbar(data, self.canvas, self)
 		self.layout().addWidget(self.toolbar)
 		self.layout().addWidget(self.canvas)
+		self.canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
+		self.canvas.setFocus()
 
 	def update(self, data):
 		self.canvas.update_figure(data)
@@ -57,14 +59,18 @@ class PlotCanvas(GraphWindow):
 
 	def update_figure(self, data):
 		# Introduces slowness, bug?
-		#[p.remove() for p in reversed(self.axes.patches)]
 		#print('patches', self.axes.patches)
+		#self.axes.clear()
+		if self.axes.patches != []:
+			[p.remove() for p in reversed(self.axes.patches)]
+			self.draw()
 		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],data.pol))
 		tmax = (data.UV.time_array.max() - data.UV.time_array.min()) * 24. * 60 * 60
 		extent = [data.UV.freq_array.min() * 1e-6, data.UV.freq_array.max() * 1e-6, tmax, 0]
 		im = self.axes.imshow(np.abs(calc), aspect='auto', extent=extent, vmin=0, vmax=2.0*np.median(np.abs(calc)))
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
+		#self.draw_idle()
 
 	def updateTitle(self, filename):
 		name = filename.split('/')[-1] if '/' in filename else filename.split('\\')[-1]
@@ -187,17 +193,18 @@ class Main(QtWidgets.QMainWindow):
 		#options |= QtWidgets.QFileDialog.DontUseNativeDialog
 		options =  QtWidgets.QFileDialog.ShowDirsOnly
 		file = QtWidgets.QFileDialog.getExistingDirectory(self,"Select UV file", "", options=options)
-		self.data.setFile(file)
-		self.aData = [str(x) for x in self.data.ants]
-		self.pData = self.data.pols
-		self.aCBox.clear()	   # delete all items from comboBox
-		self.bCBox.clear()
-		self.pCBox.clear()
-		self.aCBox.addItems(self.aData) # add the actual content of self.comboData
-		self.bCBox.addItems(self.aData)
-		self.pCBox.addItems(self.pData)
-		self.plot.update(self.data)
-		self.plot.setTitle(file)
+		if file:
+			self.data.setFile(file)
+			self.aData = [str(x) for x in self.data.ants]
+			self.pData = self.data.pols
+			self.aCBox.clear()	   # delete all items from comboBox
+			self.bCBox.clear()
+			self.pCBox.clear()
+			self.aCBox.addItems(self.aData) # add the actual content of self.comboData
+			self.bCBox.addItems(self.aData)
+			self.pCBox.addItems(self.pData)
+			self.plot.update(self.data)
+			self.plot.setTitle(file)
 
 	def saveFile(self):
 		options = QtWidgets.QFileDialog.Options()
