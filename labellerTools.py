@@ -8,10 +8,11 @@ from matplotlib.backend_tools import ToolBase, ToolToggleBase
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 class Annotate(object):
-	def __init__(self, axes, data):
+	def __init__(self, canvas, data):
 		self.labeling = False
 		self.data = data
-		self.axes = axes
+		self.canvas = canvas
+		self.axes = self.canvas.axes
 		#self.rects = [] # to be used with ids for selection later
 		self.rect = matplotlib.patches.Rectangle((0,0), 1, 1, color='white', alpha=0.5)
 		self.x0 = None
@@ -21,6 +22,7 @@ class Annotate(object):
 		self.pressed = False
 		self.shift = False
 		self.axes.add_patch(self.rect)
+		self.rects = []
 		self.axes.figure.canvas.mpl_connect('button_press_event', self.on_press)
 		self.axes.figure.canvas.mpl_connect('button_release_event', self.on_release)
 		self.axes.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
@@ -32,7 +34,9 @@ class Annotate(object):
 			self.data.saveRect()
 
 	def on_press(self, event):
-		if self.labeling and not self.shift:
+		if event is None:
+			self.x0 = 0
+		elif self.labeling and not self.shift:
 			self.pressed = True
 			self.x0 = event.xdata
 			self.y0 = event.ydata
@@ -80,18 +84,29 @@ class Annotate(object):
 
 	def addRect(self):
 		rect = matplotlib.patches.Rectangle(self.rect.get_xy(), self.rect.get_width(), self.rect.get_height(), color='white', alpha=0.3)
+		self.rects.append(rect)
 		self.axes.add_patch(rect) # can I just patch self.rect?
 
 	#how det. visibility through tree?
 	def showRects(self, labels):
 		pass
 
+	def clearRects(self):
+		if len(self.rects) > 0:
+			for r in reversed(self.rects):
+				#print(r)
+				r.remove()
+			self.rects = []
+		self.axes.figure.canvas.draw()
+		self.canvas.flush_events()
+		self.on_press(None)
+
 class MyToolbar(NavigationToolbar):
 	def __init__(self, data, canvas, parent=None):
 		NavigationToolbar.__init__(self, canvas, parent)
 		self.data = data
 		self.canvas = canvas
-		self.ann = Annotate(canvas.axes, data)
+		self.ann = Annotate(self.canvas, data)
 		#self.iconDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 		#	"..", "images", "icons", "")
 

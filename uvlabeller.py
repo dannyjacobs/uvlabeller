@@ -30,6 +30,7 @@ class WidgetPlot(QtWidgets.QWidget):
 		self.layout().addWidget(self.canvas)
 
 	def update(self, data):
+		self.toolbar.ann.clearRects()
 		self.canvas.update_figure(data)
 
 	def setTitle(self, filename):
@@ -59,12 +60,14 @@ class PlotCanvas(GraphWindow):
 		# Introduces slowness, bug?
 		#[p.remove() for p in reversed(self.axes.patches)]
 		#print('patches', self.axes.patches)
+		self.draw()
 		calc = data.UV.get_data((data.currAnts[0],data.currAnts[1],data.pol))
 		tmax = (data.UV.time_array.max() - data.UV.time_array.min()) * 24. * 60 * 60
 		extent = [data.UV.freq_array.min() * 1e-6, data.UV.freq_array.max() * 1e-6, tmax, 0]
 		im = self.axes.imshow(np.abs(calc), aspect='auto', extent=extent, vmin=0, vmax=2.0*np.median(np.abs(calc)))
 		self.fig.colorbar(im, cax=self.cbar)
 		self.draw()
+		#self.axes.idle_draw()
 
 	def updateTitle(self, filename):
 		name = filename.split('/')[-1] if '/' in filename else filename.split('\\')[-1]
