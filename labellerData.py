@@ -16,6 +16,7 @@ class Data(QtCore.QObject):
     addLabel = QtCore.pyqtSignal(str, str, int)
 
     def __init__(self):
+    	""" Initialize the session's data object."""
         super(Data, self).__init__()
         self.UV = UVData()
         self.labels = {}
@@ -24,6 +25,7 @@ class Data(QtCore.QObject):
         self.keys = {}
 
     def setFile(self, filename, idx=0):
+    	""" Update data object based on the file attributes. """
         self.filename = filename
         self.idx = idx
         self.UV.read(self.filename)
@@ -36,15 +38,18 @@ class Data(QtCore.QObject):
         # eventually will have someway to get saved labels
 
     def setFiles(self, filenames):
+    	""" Retain list of files to be opened."""
         self.files = filenames
         self.setFile(self.files[0])
 
     def nextFile(self):
+    	""" Open the next file. """
         if self.files:
             idx = (self.idx + 1) % len(self.files)
             self.setFile(self.files[self.idx], idx)
 
     def setAnts(self, a=None, b=None):
+    	""" Set the baseline. """
         if tuple(self.currAnts) in self.pairs or (
                 self.currAnts[1], self.currAnts[0] in self.pairs):
             self.saveRect()
@@ -62,15 +67,18 @@ class Data(QtCore.QObject):
         # else tooltip error
 
     def setPol(self, pol):
+    	""" Set the polarization. """
         self.pol = pol
 
     def saveRect(self, coords=None, width=None, height=None, **kwargs):
+    	""" Retain recent annotation attributes. """
         if coords is not None:
             self.recentRectangle = [coords, width, height]
         else:
             self.recentRectangle = None
 
     def saveLabel(self, keywords=None, notes=None):
+    	""" Save the annotation and its label information. """
         # how protect when not labeling?
         # if self.recentRectangle is not none?
         keywords = list(set(keywords.split(','))) if keywords is not \
@@ -98,6 +106,7 @@ class Data(QtCore.QObject):
         print(self.labels)
 
     def getNextAvailableId(self):
+    	""" Get the next available label ID"""
         dictID = (str(self.currAnts), self.pol)
         labels = self.labels[self.filename][str(dictID)]
         ids = [l['id'] for l in labels]
@@ -110,6 +119,7 @@ class Data(QtCore.QObject):
         pass
 
     def delLabel(self, filename, currAntsPol=None, idLabel=None):
+    	""" Remove the label and its annotation. """
         keys = self.keys
         if idLabel is not None:
             for i in range(keys[filename][currAntsPol], 0, -1):
@@ -122,6 +132,7 @@ class Data(QtCore.QObject):
 
     # if file has labels
     def getLabels(self, oldLabels=None):
+    	""" Update the data object with existing labels in a file. """
         if oldLabels is None and self.keys == {}:
             self.keys = {'no group': []}
             self.addLabel.emit('no group', '', 0)
@@ -141,6 +152,7 @@ class Data(QtCore.QObject):
 
     # adding new labels
     def updateTree(self, keys, newID):
+    	""" Update the tree widget with new annotations. """
         dictID = (str(self.currAnts), self.pol)
         name = str(dictID) + str(newID)
         for k in keys:
@@ -153,6 +165,7 @@ class Data(QtCore.QObject):
 
     @QtCore.pyqtSlot(list, str, int)
     def selectLabels(self, items, single, lType):
+    	""" Filter labels based on selection. """
         print(items, single, lType)
         if lType == -1:
             pass
@@ -166,6 +179,7 @@ class Data(QtCore.QObject):
             print("Problem")
 
     def exportLabels(self, exportName):
+    	""" Write the data object to a file. """
         # write dictionary to json for now
         # also no order bc dictionary, again, for now
         # also need to ensure it does full path

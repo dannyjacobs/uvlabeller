@@ -22,6 +22,7 @@ import numpy as np
 # Matplotlib management
 # Widget calls PlotCanvas which is a child of GraphWindow
 class WidgetPlot(QtWidgets.QWidget):
+    """ Create the widget that contains PlotCanvas. """
     def __init__(self, data, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setLayout(QtWidgets.QVBoxLayout())
@@ -31,18 +32,22 @@ class WidgetPlot(QtWidgets.QWidget):
         self.layout().addWidget(self.canvas)
 
     def update(self, data):
+        """ Redraw the plot and clear annotations. """
         self.toolbar.ann.clearRects()
         self.canvas.update_figure(data)
 
     def setTitle(self, filename):
+        """ Update the graph axes and title. """
         self.canvas.updateTitle(filename)
 
     def addRect(self):
+        """ Save the annotation to the screen. """
         self.toolbar.addRect()
 
 
 class GraphWindow(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
+        """ Initialize the parent GraphWindow. """
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
         self.axes.set_title(' ')
@@ -59,9 +64,11 @@ class GraphWindow(FigureCanvas):
 
 class PlotCanvas(GraphWindow):
     def __init__(self, *args, **kwargs):
+        """ Initialize with parent. """
         GraphWindow.__init__(self, *args, **kwargs)
 
     def update_figure(self, data):
+        """ Redraw the figure. """
         # Introduces slowness, bug?
         # [p.remove() for p in reversed(self.axes.patches)]
         # print('patches', self.axes.patches)
@@ -79,6 +86,7 @@ class PlotCanvas(GraphWindow):
         # self.axes.idle_draw()
 
     def updateTitle(self, filename):
+        """ Update the title of the figure. """
         name = filename.split('/')[-1] if '/' in filename else \
                 filename.split('\\')[-1]
         self.axes.set_title(name)
@@ -91,6 +99,7 @@ class TreeWidget(QtWidgets.QWidget):
     show = QtCore.pyqtSignal(list, str, int)
 
     def __init__(self, data, *args, **kwargs):
+        """ Initialize the tree widget. """
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.data = data
         self.setLayout(QtWidgets.QVBoxLayout())
@@ -115,6 +124,7 @@ class TreeWidget(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(str, str, int)
     def updateTree(self, label, item, insertType):
+        """ Update the tree widget. """
         if insertType == 0:
             newLabel = QtWidgets.QTreeWidgetItem([label])
             if item != '':
@@ -133,6 +143,7 @@ class TreeWidget(QtWidgets.QWidget):
             print("Problem")
 
     def selection(self):
+        """ Select an item in the tree widget. """
         selected = self.tw.selectedItems()
         root = self.tw.invisibleRootItem()
         top = []
@@ -174,6 +185,7 @@ class TreeWidget(QtWidgets.QWidget):
 # This handles the entire window
 class Main(QtWidgets.QMainWindow):
     def __init__(self):
+        """ Create the main window. """
         QtWidgets.QMainWindow.__init__(self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.resize(1000, 600)
@@ -191,12 +203,14 @@ class Main(QtWidgets.QMainWindow):
         self.show()
 
     def center(self):
+        """ Center the window on the screen. """
         qr = self.frameGeometry()
         cp = QtWidgets.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
     def openFiles(self):
+        """ Open files and populate the widgets. """
         options = QtWidgets.QFileDialog.Options()
         # options |= QtWidgets.QFileDialog.DontUseNativeDialog
         options = QtWidgets.QFileDialog.ShowDirsOnly
@@ -216,6 +230,7 @@ class Main(QtWidgets.QMainWindow):
         self.plot.setTitle(file)
 
     def saveFile(self):
+        """ Save the file. """
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, _ = QtWidgets.QFileDialog.getSaveFileName(
@@ -225,6 +240,7 @@ class Main(QtWidgets.QMainWindow):
             print(fileName)
 
     def exportFile(self):
+        """ Export the file. """
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         fileName, _ = QtWidgets.QFileDialog.getSaveFileName(
@@ -235,6 +251,7 @@ class Main(QtWidgets.QMainWindow):
             self.data.exportLabels(fileName)
 
     def initMenuBar(self):
+        """ Create the menubar"""
         ''' COME BACK TO LATER
         self.file_menu = QtWidgets.QMenu('&File', self)
         self.file_menu.addAction('&Quit', self.fileQuit,
@@ -322,6 +339,7 @@ class Main(QtWidgets.QMainWindow):
         return menubar
 
     def initGraphWin(self):
+        """ Setup the graph and its related widgets. """
         # Graph
         self.plot = WidgetPlot(self.data, self)
         self.tree = TreeWidget(self.data, self)
@@ -375,6 +393,7 @@ class Main(QtWidgets.QMainWindow):
         self.activeWindow.setLayout(hlayMain)
 
     def selectCombo(self, idx, cBoxType):
+        """ Handle combobox selections. """
         if cBoxType == 0:
             self.data.setAnts(int(self.aData[idx]))
         elif cBoxType == 1:
@@ -386,6 +405,7 @@ class Main(QtWidgets.QMainWindow):
         self.plot.update(self.data)
 
     def saveLabel(self):
+        """ Save annotation data. """
         self.data.saveLabel(
             self.keysEdit.text(), self.notesEdit.toPlainText())
         self.plot.addRect()
@@ -394,6 +414,7 @@ class Main(QtWidgets.QMainWindow):
 
 
 if __name__ == '__main__':
+    """ Run the application. """
     app = QtWidgets.QApplication(sys.argv)
     ex = Main()
     ex.setWindowTitle("UV Labeller")

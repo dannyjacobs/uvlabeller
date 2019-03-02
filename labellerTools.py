@@ -11,6 +11,7 @@ plt.rcParams['toolbar'] = 'toolmanager'
 class Annotate(object):
 
     def __init__(self, canvas, data):
+    	""" Initialize the Annotation tool."""
         self.labeling = False
         self.data = data
         self.canvas = canvas
@@ -34,12 +35,14 @@ class Annotate(object):
             'motion_notify_event', self.on_motion)
 
     def toggle(self):
+    	""" Turn on/off the annotation tool. """
         self.labeling = not self.labeling
         if not self.labeling:
             print('toolbar')
             self.data.saveRect()
 
     def on_press(self, event):
+    	""" Begin drawing the annotation. """
         if self.labeling and not self.shift:
             self.pressed = True
             self.x0 = event.xdata
@@ -50,6 +53,7 @@ class Annotate(object):
             pass
 
     def on_release(self, event):
+    	""" Cease drawing the annotation """
         if self.labeling and not self.shift:
             self.pressed = False
             self.x1 = event.xdata
@@ -68,6 +72,7 @@ class Annotate(object):
             pass
 
     def on_motion(self, event):
+    	""" Continue to draw the annotation. """
         if self.pressed and self.labeling and not self.shift:
             self.x1 = event.xdata
             self.y1 = event.ydata
@@ -81,18 +86,22 @@ class Annotate(object):
             pass
 
     def on_key_press(self, event):
+    	""" Set shift key high. """
         if event.key == 'shift':
             self.shift = True
 
     def on_key_release(self, event):
+    	""" Set shift key low. """
         if event.key == 'shift':
             self.shift = False
 
     def showRects(self, labels):
+    	""" TODO """
         # how det. visibility through tree?
         pass
 
     def clearRects(self):
+    	""" Remove annotations from the screen. """
         if len(self.rects) > 0:
             for r in reversed(self.rects):
                 r.remove()
@@ -101,6 +110,7 @@ class Annotate(object):
         self.canvas.flush_events()
 
     def addRect(self):
+    	""" Add annotation to the screen. """
         rect = matplotlib.patches.Rectangle(
             self.rect.get_xy(), self.rect.get_width(),
             self.rect.get_height(), color='white', alpha=0.3)
@@ -111,6 +121,7 @@ class Annotate(object):
 class MyToolbar(NavigationToolbar):
 
     def __init__(self, data, canvas, parent=None):
+    	""" Set up the custom toolbar. """
         NavigationToolbar.__init__(self, canvas, parent)
         self.data = data
         self.canvas = canvas
@@ -124,4 +135,5 @@ class MyToolbar(NavigationToolbar):
         a = self.addAction("Annotate", self.ann.toggle)
 
     def addRect(self):
+    	""" Save annotation rect to the screen. """
         self.ann.addRect()
